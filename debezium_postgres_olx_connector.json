@@ -1,0 +1,21 @@
+{
+  "name": "postgresql-olx-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "pguser",
+    "database.password": "123123",
+    "database.dbname": "olx_db",
+    "topic.prefix": "olx_db_changes",
+    "schema.include": "public",
+    "table.include.list": "public.products_product,public.categories_category",
+    "publication.autocreate.mode": "all_tables",
+    "plugin.name": "pgoutput",
+    "decimal.handling.mode": "string",
+    "time.precision.mode": "connect",
+    "snapshot.mode": "initial",
+    "name": "postgresql-olx-connector"
+  }
+}

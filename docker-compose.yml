@@ -1,0 +1,82 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: olx-test-app
+    container_name: olx-test-app
+    volumes:
+      - ./apps:/code/apps
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+    depends_on:
+      - postgres
+    networks:
+      - default
+
+
+  postgres:
+    image: postgres:16-alpine
+    hostname: postgres
+    container_name: olx-test-db
+    environment:
+      POSTGRES_USER: pguser
+      POSTGRES_PASSWORD: 123123
+      POSTGRES_DB: olx_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - ./data:/data
+      - olx_pg_data:/var/lib/postgresql/data
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+    command: postgres -c 'config_file=/etc/postgresql/postgresql.conf'
+    networks:
+      - default
+
+  redis:
+    image: redis:7.4.1-alpine
+    restart: unless-stopped
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - core-redis:/data
+    networks:
+        - default
+    command: 'redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}'
+    healthcheck:
+      test: [ 'CMD', 'redis-cli', 'ping' ]
+      retries: 3
+      timeout: 5s
+    env_file:
+      - ./.env
+
+  celery:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: olx-test-app
+    container_name: olx-test-celery
+    command: celery -A core worker --loglevel=info
+    environment:
+      - DJANGO_SETTINGS_MODULE=core.config
+      - DJANGO_CONFIGURATION=Local
+    env_file:
+      - .env
+    volumes:
+      - ./apps:/code/apps
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - default
+
+volumes:
+  olx_pg_data:
+  core-redis:
+    driver: local
+
+networks:
+  default:
+    driver: bridge
